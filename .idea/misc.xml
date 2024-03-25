@@ -5,7 +5,15 @@
     <option name="originalFiles">
       <list>
         <option value="$PROJECT_DIR$/pom.xml" />
+        <option value="$PROJECT_DIR$/../../../4、新版RabbitMQ消息队列/01.MQ基础/资料/mq-demo/pom.xml" />
       </list>
+    </option>
+    <option name="ignoredFiles">
+      <set>
+        <option value="$PROJECT_DIR$/../../../4、新版RabbitMQ消息队列/01.MQ基础/资料/mq-demo/consumer/pom.xml" />
+        <option value="$PROJECT_DIR$/../../../4、新版RabbitMQ消息队列/01.MQ基础/资料/mq-demo/pom.xml" />
+        <option value="$PROJECT_DIR$/../../../4、新版RabbitMQ消息队列/01.MQ基础/资料/mq-demo/publisher/pom.xml" />
+      </set>
     </option>
   </component>
   <component name="ProjectRootManager" version="2" languageLevel="JDK_11" default="true" project-jdk-name="11" project-jdk-type="JavaSDK" />

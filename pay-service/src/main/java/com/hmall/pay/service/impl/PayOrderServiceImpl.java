@@ -18,6 +18,7 @@ import com.hmall.pay.mapper.PayOrderMapper;
 import com.hmall.pay.service.IPayOrderService;
 //import com.hmall.service.IUserService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -39,6 +40,8 @@ public class PayOrderServiceImpl extends ServiceImpl<PayOrderMapper, PayOrder> i
 
     private final TradeClient tradeClient;
 
+    private final RabbitTemplate rabbitTemplate;
+
     @Override
     public String applyPayOrder(PayApplyDTO applyDTO) {
         // 1.幂等性校验
@@ -47,25 +50,31 @@ public class PayOrderServiceImpl extends ServiceImpl<PayOrderMapper, PayOrder> i
         return payOrder.getId().toString();
     }
 
+
     @Override
     @Transactional
-    public void tryPayOrderByBalance(PayOrderFormDTO payOrderFormDTO) {
+    public void tryPayOrderByBalance(PayOrderFormDTO payOrderDTO) {
         // 1.查询支付单
-        PayOrder po = getById(payOrderFormDTO.getId());
+        PayOrder po = getById(payOrderDTO.getId());
         // 2.判断状态
         if(!PayStatus.WAIT_BUYER_PAY.equalsValue(po.getStatus())){
             // 订单不是未支付，状态异常
             throw new BizIllegalException("交易已支付或关闭！");
         }
         // 3.尝试扣减余额
-        userClient.deductMoney(payOrderFormDTO.getPw(), po.getAmount());
+        userClient.deductMoney(payOrderDTO.getPw(), po.getAmount());
         // 4.修改支付单状态
-        boolean success = markPayOrderSuccess(payOrderFormDTO.getId(), LocalDateTime.now());
+        boolean success = markPayOrderSuccess(payOrderDTO.getId(), LocalDateTime.now());
         if (!success) {
             throw new BizIllegalException("交易已支付或关闭！");
         }
         // 5.修改订单状态
-        tradeClient.markOrderPaySuccess(po.getBizOrderNo());
+        //tradeClient.markOrderPaySuccess(po.getBizOrderNo());
+        try {
+            rabbitTemplate.convertAndSend("pay.direct", "pay.success", po.getBizOrderNo());
+        } catch (Exception e) {
+            log.error("支付成功的消息发送失败，支付单id：{}， 交易单id：{}",e);
+        }
     }
 
     public boolean markPayOrderSuccess(Long id, LocalDateTime successTime) {
